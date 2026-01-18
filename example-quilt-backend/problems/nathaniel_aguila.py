@@ -26,7 +26,7 @@ COURSE_CATALOG = {
     "ENGL 10600": {"credits": 4, "prereqs": [], "terms": [1, 2]},
     "COM 11400":  {"credits": 3, "prereqs": [], "terms": [1, 2]},
     "GENED EASY": {"credits": 1, "prereqs": [], "terms": [1, 2]}, 
-    "GENED HARD": {"credits": 3, "prereqs": [], "terms": [1, 2]},
+    "GENED HARD": {"credits": 3, "prereqs": [], "terms": [1, 2]}, 
 }
 
 DEGREE_REQUIREMENTS = [
@@ -60,7 +60,8 @@ def parse_data(user_data):
             all_possible_courses.add(c)
             
     semesters = list(range(max_semesters))
-    
+
+    print("parsed data:", all_possible_courses, remaining_requirements, semesters, max_credits, courses_taken)
     return remaining_requirements, list(all_possible_courses), semesters, max_credits, courses_taken
 
 def main(data):
@@ -76,9 +77,11 @@ def main(data):
     
     # Create the 'user_data' dictionary that parse_data expects
     # We map 'code' from the grid to 'courses_taken' for the parser
+    # lowkey I don't know how the mapping works because im tired
+    # maybe I can finish this after sleeping or someone else can lock in -nathaniel
     formatted_user_data = {
         "max_credits": int(config.get("max_credits", 18)),
-        "max_semesters": 8,  # Default or pull from config if you add it to UI
+        "max_semesters": 4,  # small for testing
         "courses_taken": [course['code'] for course in course_pool]
     }
     print("Data formatted for parser:", formatted_user_data)
@@ -152,5 +155,5 @@ def main(data):
                 term_req - term_c + M * sum_c <= M - 1, 
                 label=f"timing_{req}_{c}"
             )
-
+    print("CQM constructed")
     return cqm
