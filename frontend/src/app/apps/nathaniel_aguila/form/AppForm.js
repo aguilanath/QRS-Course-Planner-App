@@ -88,7 +88,6 @@ const AppForm = () => {
     Object.keys(data).forEach(key => {
         // Filter out slack variables or metadata
         if (data[key] === 1 && !key.startsWith("slack_")) {
-            const parts = key.rsplit('_', 1); // Split only on the last underscore
             // Custom rsplit implementation since JS doesn't have it built-in like Python
             const lastUnderscoreIndex = key.lastIndexOf('_');
             if (lastUnderscoreIndex !== -1) {
