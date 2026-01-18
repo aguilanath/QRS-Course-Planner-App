@@ -5,37 +5,37 @@ import numpy as np
 
 COURSE_CATALOG = {
     # --- CORE CS ---
-    "CS180": {"credits": 4, "prereqs": [], "terms": [1, 2]},
-    "CS182": {"credits": 3, "prereqs": ["CS180"], "terms": [1, 2]},
-    "CS240": {"credits": 3, "prereqs": ["CS180"], "terms": [1, 2]},
-    "CS250": {"credits": 4, "prereqs": ["CS180"], "terms": [1, 2]},
-    "CS251": {"credits": 3, "prereqs": ["CS182", "CS250"], "terms": [1, 2]},
-    "CS252": {"credits": 4, "prereqs": ["CS250"], "terms": [1, 2]},
-    "CS307": {"credits": 3, "prereqs": ["CS182", "CS240"], "terms": [1, 2]},
-    "CS354": {"credits": 3, "prereqs": ["CS250"], "terms": [1, 2]},
+    "CS 18000": {"credits": 4, "prereqs": [], "terms": [1, 2]},
+    "CS 18200": {"credits": 3, "prereqs": ["CS 18000"], "terms": [1, 2]},
+    "CS 24000": {"credits": 3, "prereqs": ["CS 18000"], "terms": [1, 2]},
+    "CS 25000": {"credits": 4, "prereqs": ["CS 18000"], "terms": [1, 2]},
+    "CS 25100": {"credits": 3, "prereqs": ["CS 18200", "CS 25000"], "terms": [1, 2]},
+    "CS 25200": {"credits": 4, "prereqs": ["CS 25000"], "terms": [1, 2]},
+    "CS 30700": {"credits": 3, "prereqs": ["CS 18200", "CS 24000"], "terms": [1, 2]},
+    "CS 35400": {"credits": 3, "prereqs": ["CS 25000"], "terms": [1, 2]},
     
     # --- MATH REQS ---
-    "MA161": {"credits": 5, "prereqs": [], "terms": [1, 2]},
-    "MA162": {"credits": 5, "prereqs": ["MA161"], "terms": [1, 2]},
-    "MA261": {"credits": 4, "prereqs": ["MA162"], "terms": [1, 2]},
+    "MA 16100": {"credits": 5, "prereqs": [], "terms": [1, 2]},
+    "MA 16200": {"credits": 5, "prereqs": ["MA 16100"], "terms": [1, 2]},
+    "MA 26100": {"credits": 4, "prereqs": ["MA 16200"], "terms": [1, 2]},
     # Linear Algebra Options: MA265 (3 cr) vs MA351 (3 cr)
-    "MA265": {"credits": 3, "prereqs": ["MA162"], "terms": [1, 2]}, 
-    "MA351": {"credits": 4, "prereqs": ["MA162"], "terms": [1, 2]}, 
+    "MA 26500": {"credits": 3, "prereqs": ["MA 16200"], "terms": [1, 2]}, 
+    "MA 35100": {"credits": 4, "prereqs": ["MA 16200"], "terms": [1, 2]}, 
     
     # --- GEN EDS ---
-    "ENGL106": {"credits": 4, "prereqs": [], "terms": [1, 2]},
-    "COM114":  {"credits": 3, "prereqs": [], "terms": [1, 2]},
-    "GENED_EASY": {"credits": 1, "prereqs": [], "terms": [1, 2]}, 
-    "GENED_HARD": {"credits": 3, "prereqs": [], "terms": [1, 2]},
+    "ENGL 10600": {"credits": 4, "prereqs": [], "terms": [1, 2]},
+    "COM 11400":  {"credits": 3, "prereqs": [], "terms": [1, 2]},
+    "GENED EASY": {"credits": 1, "prereqs": [], "terms": [1, 2]}, 
+    "GENED HARD": {"credits": 3, "prereqs": [], "terms": [1, 2]},
 }
 
 DEGREE_REQUIREMENTS = [
-    "CS180", "CS182", "CS240", "CS250", "CS251", "CS252", 
-    "MA161", "MA162", "MA261", 
-    ("MA265", "MA351"), # Choice!
-    "ENGL106", "COM114",
-    "CS307", "CS354", 
-    ("GENED_EASY", "GENED_HARD") # Choice!
+    "CS 18000", "CS 18200", "CS 24000", "CS 25000", "CS 25100", "CS 25200", 
+    "MA 16100", "MA 16200", "MA 26100", 
+    ("MA 26500", "MA 35100"), # Choice!
+    "ENGL 10600", "COM 11400",
+    "CS 30700", "CS 35400", 
+    ("GENED EASY", "GENED HARD") # Choice!
 ]
 
 def parse_data(user_data):
@@ -64,7 +64,26 @@ def parse_data(user_data):
     return remaining_requirements, list(all_possible_courses), semesters, max_credits, courses_taken
 
 def main(data):
-    remaining_reqs, all_courses, semesters, max_credits, courses_taken = parse_data(data)
+    print("--- BACKEND TRIGGERED ---")
+    print("Data received:", data)
+
+    # Extract config
+    config_list = data.get('config', [{}])
+    config = config_list[0] if config_list else {}
+    
+    # Extract pool
+    course_pool = data.get('pool', [])
+    
+    # Create the 'user_data' dictionary that parse_data expects
+    # We map 'code' from the grid to 'courses_taken' for the parser
+    formatted_user_data = {
+        "max_credits": int(config.get("max_credits", 18)),
+        "max_semesters": 8,  # Default or pull from config if you add it to UI
+        "courses_taken": [course['code'] for course in course_pool]
+    }
+    print("Data formatted for parser:", formatted_user_data)
+
+    remaining_reqs, all_courses, semesters, max_credits, courses_taken = parse_data(formatted_user_data)
     
     cqm = ConstrainedQuadraticModel()
     
