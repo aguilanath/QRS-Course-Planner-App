@@ -79,6 +79,7 @@ const AppForm = () => {
         <h2 className="header-container" style={{ fontSize: "1.1rem", marginBottom: '15px' }}>I. System Configuration</h2>
         <div className="grid-wrapper" style={{ height: `12vh`, width: "90%", margin: '0 auto' }}>
           <AgGridReact
+            theme="legacy" // To avoid warning about theme -Nathaniel
             className="ag-theme-alpine-dark"
             rowData={systemConfig}
             columnDefs={columnDefs.config}
@@ -101,6 +102,7 @@ const AppForm = () => {
         </div>
         <div className="grid-wrapper" style={{ height: `${grid_height_vh}vh`, width: "90%", margin: '0 auto' }}>
           <AgGridReact
+            theme="legacy" // To avoid warning about theme -Nathaniel
             className="ag-theme-alpine-dark"
             rowData={courseList}
             columnDefs={columnDefs.courses}
@@ -118,6 +120,7 @@ const AppForm = () => {
         </h2>
         <div className="grid-wrapper" style={{ height: `${grid_height_vh}vh`, width: "90%", margin: '0 auto' }}>
           <AgGridReact
+            theme="legacy" // To avoid warning about theme -Nathaniel
             className="ag-theme-alpine-dark"
             rowData={scheduleOutput}
             columnDefs={columnDefs.output}
@@ -126,10 +129,11 @@ const AppForm = () => {
         </div>
       </div>
 
+
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <SubmitButton 
-          problem_id="purdue_quantum_01" 
-          getData={() => ({ config: systemConfig, pool: courseList })} 
+          problem_id="nathaniel_aguila" 
+          getData={() => {return { config: systemConfig, pool: courseList };}}          
           sendData={setScheduleOutput} 
         />
       </div>
