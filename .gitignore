@@ -217,6 +217,5 @@ out/
 # Specific frontend ignores
 example-quilt-frontend/.next/
 example-quilt-frontend/node_modules/
-example-quilt-frontend/src/app/apps/example_problem/
 
 
