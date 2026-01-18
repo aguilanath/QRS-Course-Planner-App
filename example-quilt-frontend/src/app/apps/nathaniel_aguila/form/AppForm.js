@@ -1,155 +1,138 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import "../problem_1.css";
 import SubmitButton from "@/app/components/app/submit/SubmitButton";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const AppForm = () => {
+  const grid_height_vh = 35;
+  const courseGridRef = useRef();
 
-  const grid_height_vh = 40;
+  // Mock Purdue CS Core Requirements for the "Auto-fill" feature
+  const CS_CORE = [
+    { code: "CS 18000", name: "Problem Solving & OOP", priority: "Critical (Core)", credits: 4 },
+    { code: "CS 24000", name: "Programming in C", priority: "High", credits: 3 },
+    { code: "MA 16100", name: "Calculus I", priority: "Critical (Core)", credits: 5 },
+    { code: "CS 18200", name: "Discrete Mathematics", priority: "High", credits: 3 }
+  ];
 
-  const companyGridRef = useRef();
-  const supplierGridRef = useRef();
-  const supplierSizeRef = useRef();
+  const [systemConfig] = useState([{ department: "CS", major: "Computer Science", max_credits: 18, term: "Fall 2026" }]);
+  const [courseList, setCourseList] = useState([]);
+  const [scheduleOutput, setScheduleOutput] = useState([]);
 
-  const [companyGrid, setCompanyGrid] = useState([
-    { "suppliers": 0, "stock_need": 0, "units": 0 }
-  ]);
+  // --- Dynamic UI Logic ---
+  const handleAutoFillCS = () => {
+    setCourseList(CS_CORE);
+  };
 
-  const [supplierGrid, setSupplierGrid] = useState([]);
-  const [outputGrid, setOutputGrid] = useState([]);
-  const [companyGridColumns, setCompanyGridColumns] = useState([
-    { "headerName": '# Suppliers', "field": 'suppliers', "editable": true },
-    { "headerName": 'Stock need in (days)', "field": 'stock_need', "editable": true },
-    { "headerName": 'Units of Product', "field": 'units', "editable": true },
-  ]);
-  const [supplierGridColumns, setSupplierGridColumns] = useState([
-    { "headerName": 'Supplier', "field": 'supplier' },
-    { "headerName": 'Bulk Units', "field": 'bulk_units', "editable": true },
-    { "headerName": 'Total Cost', "field": 'total_cost', "editable": true },
-    { "headerName": 'Lead Time', "field": 'lead_time', "editable": true },
-  ]);
-  const [outputGridColumns, setOutputGridColumns] = useState([
-    { "field": "supplier", "headerName": "Supplier Constraints" },
-    {
-      "headerName": "Order Selected",
-      "children": [
-        { "field": "order_1", "headerName": " " },
-        { "field": "order_2", "headerName": " " },
-        { "field": "order_3", "headerName": " " },
-      ],
-    }
-  ]);
+  const addManualCourse = () => {
+    const newCourse = { code: "NEW-101", name: "Manual Entry Course", priority: "Medium", credits: 3 };
+    setCourseList(prev => [...prev, newCourse]);
+  };
 
-  const handleCompanyGridChanged = (params) => {
-    const supplierCount = params['data'][companyGridColumns[0]['field']];
-    if (supplierCount != null && supplierCount > -1) {
-      if (supplierGrid.length < supplierCount) {
-        const newSupplierGrid = Array.from(supplierGrid).concat(Array.from({ length: (supplierCount - supplierGrid.length) }, (_, index) => ({
-          supplier: `${supplierGridColumns[0]['headerName']} ${index + 1 + supplierGrid.length}`,
-          bulk_units: 0,
-          total_cost: 0,
-          lead_time: 0,
-        })));
-        setSupplierGrid(newSupplierGrid);
-      } else if (supplierGrid.length > supplierCount) {
-        const newSupplierGrid = Array.from(supplierGrid).slice(0, supplierCount);
-        setSupplierGrid(newSupplierGrid);
+  // --- Column Definitions ---
+  const columnDefs = useMemo(() => ({
+    config: [
+      { headerName: 'Dept', field: 'department', editable: true, flex: 1 },
+      { headerName: 'Major Path', field: 'major', editable: true, flex: 2 },
+      { headerName: 'Max Load (Cr)', field: 'max_credits', editable: true, flex: 1 },
+      { headerName: 'Term', field: 'term', editable: true, flex: 1 }
+    ],
+    courses: [
+      { headerName: 'ID', field: 'code', editable: true, flex: 1, checkboxSelection: true },
+      { headerName: 'Course Title', field: 'name', editable: true, flex: 3 },
+      { headerName: 'Credits', field: 'credits', editable: true, flex: 1 },
+      { 
+        headerName: 'Priority State', 
+        field: 'priority', 
+        editable: true, 
+        flex: 1.5,
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: { values: ["Critical (Core)", "High", "Medium", "Elective"] }
       }
-    }
-  };
-
-  const sizeStrategy = {
-    type: "fitGridWidth",
-    defaultMinWidth: 100
-  };
-
-  const displayOutput = (data) => {
-    const res = Array.from({ length: supplierSizeRef.size }, () => Array(supplierSizeRef.o).fill(0));
-    for (let o = 0; o < supplierSizeRef.o; o++) {
-        for (let s = 0; s < supplierSizeRef.size; s++) {
-            const key = `${s}_${o}`;
-            res[s][o] = data[key] ?? 0;
-        }
-    }
-    const output = Array.from({ length: supplierSizeRef.size }, (_, i) => ({
-        supplier: supplierSizeRef.idx[i],
-        order_1: res[i][0] ?? 0,
-        order_2: res[i][1] ?? 0,
-        order_3: res[i][2] ?? 0,
-    }));
-    setOutputGrid(output)
-  };
-
-  const getData = (companyGridRef, supplierGridRef) => {
-    setOutputGrid([]);
-    companyGridRef.current.api.forEachNode((node) => node.setSelected(false));
-    supplierGridRef.current.api.forEachNode((node) => node.setSelected(false));
-    const rowDataCompany = [];
-    const rowDataSupplier = [];
-    companyGridRef.current.api.forEachNode((node) => rowDataCompany.push(node.data));
-    supplierGridRef.current.api.forEachNode((node) => rowDataSupplier.push(node.data));
-    supplierSizeRef.size = rowDataCompany[0]["suppliers"]
-    const D = rowDataCompany[0]["stock_need"]
-    supplierSizeRef.idx = rowDataSupplier.map(s => s["supplier"])
-    const leadTimes = rowDataSupplier.map(s => s.lead_time);
-    let o_temp = 0;
-    const minLeadTime = Math.min(...leadTimes);
-    if (minLeadTime !== 0) {
-      o_temp = Math.floor(D / minLeadTime);
-    }
-    supplierSizeRef.o = o_temp
-    return {"companyData": rowDataCompany, "supplierData": rowDataSupplier}
-  };
-
-  const gridOptions = {
-    stopEditingWhenCellsLoseFocus: true,
-  };
+    ],
+    output: [
+      { field: "code", headerName: "Optimized Node", flex: 1 },
+      { field: "name", headerName: "Title", flex: 2.5 },
+      { field: "confidence", headerName: "Quantum Prob. %", flex: 1 }
+    ]
+  }), []);
 
   return (
-    <div>
-      <div style={{ padding: "20px" }}>
-        <div style={{ marginBottom: "10px" }}>
-          <h2 style={{ textAlign: "center", marginBottom: "10px" }}>Company Information</h2>
-          <div style={{ margin: "0 auto", height: `10.55vh`, width: "50%" }}>
-            <AgGridReact
-              rowData={companyGrid}
-              columnDefs={companyGridColumns}
-              autoSizeStrategy={sizeStrategy}
-              onCellValueChanged={handleCompanyGridChanged}
-              ref={companyGridRef}
-              gridOptions={gridOptions}
-            />
+    <div style={{ padding: "40px", backgroundColor: "#000", minHeight: "100vh" }}>
+      
+      {/* HEADER SECTION */}
+      <div style={{ marginBottom: "40px", textAlign: "center" }}>
+        <h2 className="header-container" style={{ fontSize: '2.5rem' }}>QuantaPlan</h2>
+        <p style={{ color: "#00d4ff", textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '3px' }}>
+          Purdue University // Quantum Scheduling Engine
+        </p>
+      </div>
+
+      {/* 1. ACADEMIC PARAMETERS */}
+      <div style={{ marginBottom: "40px" }}>
+        <h2 className="header-container" style={{ fontSize: "1.1rem", marginBottom: '15px' }}>I. System Configuration</h2>
+        <div className="grid-wrapper" style={{ height: `12vh`, width: "90%", margin: '0 auto' }}>
+          <AgGridReact
+            className="ag-theme-alpine-dark"
+            rowData={systemConfig}
+            columnDefs={columnDefs.config}
+          />
+        </div>
+      </div>
+
+      {/* 2. COURSE POOL WITH TRANSITION BUTTONS */}
+      <div style={{ marginBottom: "40px" }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '90%', margin: '0 auto 15px auto', alignItems: 'center' }}>
+          <h2 className="header-container" style={{ fontSize: "1.1rem" }}>II. Course Potential Pool</h2>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={handleAutoFillCS} className="popup-button" style={{ fontSize: '12px' }}>
+              ⚡ Auto-Fill CS Core
+            </button>
+            <button onClick={addManualCourse} className="popup-button" style={{ fontSize: '12px' }}>
+              + Add Manual Node
+            </button>
           </div>
         </div>
-        <div style={{ marginBottom: "10px" }}>
-          <h2 style={{ textAlign: "center", marginBottom: "10px" }}>Suppliers</h2>
-          <div style={{ margin: "0 auto", height: `${grid_height_vh}vh`, width: "50%" }}>
-            <AgGridReact
-              rowData={supplierGrid}
-              columnDefs={supplierGridColumns}
-              autoSizeStrategy={sizeStrategy}
-              ref={supplierGridRef}
-              gridOptions={gridOptions}
-            />
-          </div>
+        <div className="grid-wrapper" style={{ height: `${grid_height_vh}vh`, width: "90%", margin: '0 auto' }}>
+          <AgGridReact
+            className="ag-theme-alpine-dark"
+            rowData={courseList}
+            columnDefs={columnDefs.courses}
+            ref={courseGridRef}
+            rowSelection="multiple"
+            animateRows={true}
+          />
         </div>
-        <div>
-          <h2 style={{ textAlign: "center", marginBottom: "10px" }}>Solution</h2>
-          <div style={{ margin: "0 auto", height: `${grid_height_vh}vh`, width: "50%" }}>
-            <AgGridReact
-              rowData={outputGrid}
-              columnDefs={outputGridColumns}
-              autoSizeStrategy={sizeStrategy}
-              gridOptions={gridOptions}
-            />
-          </div>
+      </div>
+
+      {/* 3. OPTIMIZED SOLUTION */}
+      <div style={{ marginBottom: "40px" }}>
+        <h2 className="header-container" style={{ textAlign: "center", fontSize: "1.1rem", marginBottom: '15px' }}>
+          III. Optimized Coherence Schedule
+        </h2>
+        <div className="grid-wrapper" style={{ height: `${grid_height_vh}vh`, width: "90%", margin: '0 auto' }}>
+          <AgGridReact
+            className="ag-theme-alpine-dark"
+            rowData={scheduleOutput}
+            columnDefs={columnDefs.output}
+            animateRows={true}
+          />
         </div>
-        <SubmitButton problem_id="example_problem" getData={() => getData(companyGridRef, supplierGridRef)} sendData={displayOutput} />
-        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <SubmitButton 
+          problem_id="purdue_quantum_01" 
+          getData={() => ({ config: systemConfig, pool: courseList })} 
+          sendData={setScheduleOutput} 
+        />
+      </div>
     </div>
   );
 };
